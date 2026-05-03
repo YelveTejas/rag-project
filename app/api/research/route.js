@@ -10,9 +10,12 @@ export async function POST(req) {
   try {
     const { messages, chatId } = await req.json();
     const collection = await getCollection("chats");
-    const userQuery = messages[messages.length - 1].content;
+    
+    const lastMessage = messages[messages.length - 1];
+    const userQuery = lastMessage.content || "Analyze this image.";
+    const hasImage = !!lastMessage.image;
 
-    console.log("🔥 QUERY:", userQuery);
+    console.log("🔥 QUERY:", userQuery, "| HAS IMAGE:", hasImage);
 
     // 🧠 RAG (retrieve context)
     const context = await agent(userQuery);
@@ -37,13 +40,27 @@ ${context}
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // 🤖 Format messages for Groq
+          const groqMessages = [
+            { role: "system", content: systemPrompt }
+          ];
+
+          if (hasImage) {
+            groqMessages.push({
+              role: "user",
+              content: [
+                { type: "text", text: userQuery },
+                { type: "image_url", image_url: { url: lastMessage.image } }
+              ]
+            });
+          } else {
+            groqMessages.push({ role: "user", content: userQuery });
+          }
+
           // 🤖 Groq streaming
           const groqStream = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userQuery },
-            ],
+            model: hasImage ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile",
+            messages: groqMessages,
             stream: true,
           });
 

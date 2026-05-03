@@ -2,18 +2,20 @@
 
 import { useEffect, useState, useRef } from "react";
 import MessageBubble from "./MessageBubble";
-import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot } from "lucide-react";
+import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot, ImagePlus, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [chatId, setChatId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -23,14 +25,32 @@ export default function ChatBox() {
     scrollToBottom();
   }, [messages, loading]);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check size limit (e.g., 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size must be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
-    if (loading || !input.trim()) return;
+    if (loading || (!input.trim() && !selectedImage)) return;
 
-    const userMsg = { role: "user", content: input };
+    const userMsg = { role: "user", content: input, image: selectedImage };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput("");
+    setSelectedImage(null);
     setLoading(true);
 
     try {
@@ -241,24 +261,55 @@ export default function ChatBox() {
         <div className="p-4 md:p-6 bg-gradient-to-t from-[#0b1121] via-[#0b1121] to-transparent pt-8">
           <form
             onSubmit={handleSend}
-            className="max-w-4xl mx-auto relative flex items-end gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-2 shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-slate-600 transition-all duration-300"
+            className="max-w-4xl mx-auto relative flex flex-col gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-2 shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-slate-600 transition-all duration-300"
           >
-            <textarea
-              disabled={loading}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 max-h-32 min-h-[44px] p-3 bg-transparent text-white resize-none outline-none text-sm md:text-base placeholder-slate-400 scrollbar-thin scrollbar-thumb-slate-600"
-              placeholder="Message Insight Stream..."
-              rows={1}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl transition-all duration-200 shrink-0 flex items-center justify-center active:scale-95 disabled:active:scale-100"
-            >
-              <Send size={20} className={cn("transition-opacity", loading || !input.trim() ? "opacity-50" : "opacity-100")} />
-            </button>
+            {selectedImage && (
+              <div className="relative w-24 h-24 ml-3 mt-2 rounded-lg overflow-hidden border border-slate-600 shadow-sm">
+                <img src={selectedImage} alt="Preview" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-1 right-1 bg-black/60 rounded-full text-white hover:text-red-400 transition-colors"
+                >
+                  <XCircle size={18} />
+                </button>
+              </div>
+            )}
+            
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="p-3 text-slate-400 hover:text-blue-400 transition-colors shrink-0 disabled:opacity-50"
+              >
+                <ImagePlus size={22} />
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImageSelect}
+                accept="image/*" 
+                className="hidden" 
+              />
+              
+              <textarea
+                disabled={loading}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 max-h-32 min-h-[44px] p-3 bg-transparent text-white resize-none outline-none text-sm md:text-base placeholder-slate-400 scrollbar-thin scrollbar-thumb-slate-600"
+                placeholder="Message Insight Stream..."
+                rows={1}
+              />
+              <button
+                type="submit"
+                disabled={loading || (!input.trim() && !selectedImage)}
+                className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl transition-all duration-200 shrink-0 flex items-center justify-center active:scale-95 disabled:active:scale-100"
+              >
+                <Send size={20} className={cn("transition-opacity", loading || (!input.trim() && !selectedImage) ? "opacity-50" : "opacity-100")} />
+              </button>
+            </div>
           </form>
           <div className="text-center mt-3 text-xs text-slate-500 tracking-wide">
             AI can make mistakes. Consider verifying important information.

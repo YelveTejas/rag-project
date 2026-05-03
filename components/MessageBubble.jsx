@@ -32,8 +32,13 @@ export default function MessageBubble({ msg }) {
             : "bg-slate-800 text-slate-200 rounded-tl-sm shadow-md border border-slate-700/50"
         )}
       >
+        {msg.image && (
+          <div className="mb-3">
+            <img src={msg.image} alt="Attached" className="max-w-full rounded-lg max-h-64 object-contain border border-white/20" />
+          </div>
+        )}
         <div className="text-sm md:text-base leading-relaxed break-words [&>p]:mb-4 last:[&>p]:mb-0 [&>pre]:bg-slate-900 [&>pre]:p-3 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>pre]:my-3 [&>pre]:border [&>pre]:border-slate-700 [&>code]:bg-slate-900 [&>code]:text-teal-300 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>code]:text-sm [&>ul]:list-disc [&>ul]:ml-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-5 [&>ol]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-3 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:mb-2 [&>a]:text-blue-400 [&>a]:underline">
-          <ReactMarkdown>{msg.content}</ReactMarkdown>
+          <ReactMarkdown>{msg.content || ""}</ReactMarkdown>
         </div>
       </div>
     </motion.div>
