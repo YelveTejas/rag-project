@@ -2,6 +2,29 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create OAuth apps in Google and GitHub, then add these values to `.env.local`:
+
+```bash
+AUTH_SECRET=
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+AUTH_GITHUB_ID=
+AUTH_GITHUB_SECRET=
+```
+
+For local development, use these callback URLs:
+
+```text
+http://localhost:3000/api/auth/callback/google
+http://localhost:3000/api/auth/callback/github
+```
+
+Generate `AUTH_SECRET` with:
+
+```bash
+npx auth secret
+```
+
 First, run the development server:
 
 ```bash

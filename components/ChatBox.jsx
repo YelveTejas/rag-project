@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import MessageBubble from "./MessageBubble";
-import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot, ImagePlus, XCircle } from "lucide-react";
+import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot, ImagePlus, XCircle, LogOut, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { signOut } from "next-auth/react";
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([]);
@@ -16,6 +17,7 @@ export default function ChatBox() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,6 +105,19 @@ export default function ChatBox() {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteChat = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/chat-history/${id}`, { method: 'DELETE' });
+      setHistory((prev) => prev.filter((chat) => chat._id !== id));
+      if (chatId === id) {
+        startNewChat();
+      }
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
     }
   };
 
@@ -194,19 +209,53 @@ export default function ChatBox() {
                 key={chat._id}
                 onClick={() => handleChatClick(chat)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-200 group",
+                  "w-full flex items-center justify-between px-3 py-3 rounded-xl text-left transition-all duration-200 group relative overflow-hidden",
                   chatId === chat._id
                     ? "bg-slate-800 text-white shadow-sm ring-1 ring-slate-700"
                     : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
                 )}
               >
-                <MessageSquare size={16} className={cn("shrink-0", chatId === chat._id ? "text-blue-400" : "group-hover:text-slate-300")} />
-                <span className="truncate text-sm font-medium">
-                  {chat?.message?.[0]?.content || "Empty Chat"}
-                </span>
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <MessageSquare size={16} className={cn("shrink-0", chatId === chat._id ? "text-blue-400" : "group-hover:text-slate-300")} />
+                  <span className="truncate text-sm font-medium">
+                    {chat?.message?.[0]?.content || "Empty Chat"}
+                  </span>
+                </div>
+                <div 
+                  onClick={(e) => handleDeleteChat(e, chat._id)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-md transition-all z-10 shrink-0"
+                  title="Delete chat"
+                >
+                  <Trash2 size={14} />
+                </div>
               </button>
             ))
           )}
+        </div>
+
+        <div className="border-t border-slate-800/60 p-4">
+          {/* <div className="flex items-center gap-3">
+            {user?.image ? (
+              <img src={user.image} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              <div className="h-9 w-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-semibold text-slate-200">
+                {userInitial}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-200">{displayName}</p>
+              <p className="truncate text-xs text-slate-500">{user?.email || "Authenticated"}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => signOut({ redirectTo: "/" })}
+              className="h-9 w-9 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center"
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <LogOut size={17} />
+            </button>
+          </div> */}
         </div>
       </motion.div>
 
@@ -232,7 +281,7 @@ export default function ChatBox() {
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">How can I help today?</h2>
               <p className="text-slate-400 text-sm md:text-base leading-relaxed">
-                Ask me anything! I'm here to provide insights, answer questions, and assist with your tasks.
+                Ask me anything! I&apos;m here to provide insights, answer questions, and assist with your tasks.
               </p>
             </div>
           ) : (

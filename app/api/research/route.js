@@ -19,7 +19,7 @@ export async function POST(req) {
 
     // 🧠 RAG (retrieve context)
     const context = await agent(userQuery);
-    console.log(context,'context')
+    // console.log(context,'context')
 
     // 🧠 Prompt
     const systemPrompt = `
@@ -59,7 +59,7 @@ ${context}
 
           // 🤖 Groq streaming
           const groqStream = await groq.chat.completions.create({
-            model: hasImage ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile",
+            model: hasImage ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile",
             messages: groqMessages,
             stream: true,
           });
