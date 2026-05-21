@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { agent } from "@/lib/agent";
 import { getCollection } from "@/lib/mongo";
 import { ObjectId } from "mongodb";
@@ -8,10 +9,18 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req) {
   try {
+    const session = await auth();
+    const userId = session?.user?.email || session?.user?.id || session?.user?.sub;
+
+    if (!userId) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
     const { messages, chatId } = await req.json();
     const collection = await getCollection("chats");
     
     const lastMessage = messages[messages.length - 1];
+    console.log(lastMessage,'lastMessage')
     const userQuery = lastMessage.content || "Analyze this image.";
     const hasImage = !!lastMessage.image;
 
@@ -81,12 +90,17 @@ ${context}
           let finalChatId = chatId;
 
           if (chatId) {
+            if (!ObjectId.isValid(chatId)) {
+              throw new Error("Invalid chat ID");
+            }
+
             await collection.updateOne(
-              { _id: new ObjectId(chatId) },
+              { _id: new ObjectId(chatId), userId },
               { $set: { message: updatedMessages, updatedAt: new Date() } }
             );
           } else {
             const res = await collection.insertOne({
+              userId,
               message: updatedMessages,
               createdAt: new Date(),
               updatedAt: new Date(),

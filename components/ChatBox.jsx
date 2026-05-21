@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import MessageBubble from "./MessageBubble";
-import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot, ImagePlus, XCircle, LogOut, Trash2 } from "lucide-react";
+import { Send, MessageSquare, PlusCircle, Loader2, Menu, X, Bot, ImagePlus, XCircle, LogOut, Trash2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 
-export default function ChatBox() {
+export default function ChatBox({ user }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
@@ -15,9 +15,13 @@ export default function ChatBox() {
   const [history, setHistory] = useState([]);
   const [chatId, setChatId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const displayName = user?.name || user?.email || "Signed in user";
+  const firstName = (user?.name || user?.email?.split("@")[0] || "there").split(" ")[0];
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -157,6 +161,56 @@ export default function ChatBox() {
 
   return (
     <div className="flex h-full bg-[#0f172a] overflow-hidden text-slate-200 font-sans">
+      <AnimatePresence>
+        {showSignOutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
+            onClick={() => setShowSignOutConfirm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-black/40"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-200/10 text-amber-200 ring-1 ring-amber-200/20">
+                  <LogOut size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Sign out?</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    Your chats are saved. You can come back anytime with the same account.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="h-10 flex-1 rounded-lg border border-slate-700 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800"
+                >
+                  Stay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirectTo: "/" })}
+                  className="h-10 flex-1 rounded-lg bg-amber-200 text-sm font-semibold text-slate-950 transition-colors hover:bg-amber-100"
+                >
+                  Sign out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -234,7 +288,7 @@ export default function ChatBox() {
         </div>
 
         <div className="border-t border-slate-800/60 p-4">
-          {/* <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             {user?.image ? (
               <img src={user.image} alt="" className="h-9 w-9 rounded-full object-cover" />
             ) : (
@@ -248,14 +302,14 @@ export default function ChatBox() {
             </div>
             <button
               type="button"
-              onClick={() => signOut({ redirectTo: "/" })}
+              onClick={() => setShowSignOutConfirm(true)}
               className="h-9 w-9 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center"
               title="Sign out"
               aria-label="Sign out"
             >
               <LogOut size={17} />
             </button>
-          </div> */}
+          </div>
         </div>
       </motion.div>
 
@@ -275,14 +329,32 @@ export default function ChatBox() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-slate-700">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto px-4">
-              <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-xl border border-slate-700/50 ring-4 ring-slate-800/50">
-                <Bot size={40} className="text-teal-400" />
+            <div className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-4">
+              <div className="mb-6 flex items-center gap-3 rounded-lg border border-teal-300/20 bg-teal-300/10 px-4 py-3 text-teal-100 shadow-xl shadow-black/10">
+                <Sparkles size={18} className="text-amber-200" />
+                <span className="text-sm font-medium">Workspace ready</span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">How can I help today?</h2>
-              <p className="text-slate-400 text-sm md:text-base leading-relaxed">
-                Ask me anything! I&apos;m here to provide insights, answer questions, and assist with your tasks.
+              <div className="w-20 h-20 bg-slate-800 rounded-lg flex items-center justify-center mb-6 shadow-xl border border-slate-700/50 ring-4 ring-slate-800/50">
+                <Bot size={38} className="text-teal-300" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                Hi {firstName}, what can I help you explore today?
+              </h2>
+              <p className="text-slate-400 text-sm md:text-base leading-7">
+                Toss me a question, a half-formed idea, or a tricky document. I&apos;ll help turn it into something useful.
               </p>
+              <div className="mt-7 grid w-full max-w-xl gap-3 sm:grid-cols-3">
+                {["Summarize a topic", "Compare options", "Find the next step"].map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => setInput(prompt)}
+                    className="rounded-lg border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm font-medium text-slate-300 transition-colors hover:border-teal-300/40 hover:bg-slate-800 hover:text-white"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)
